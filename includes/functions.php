@@ -72,18 +72,11 @@ function mmmr($array, $output = 'mean'){
     } 
 } 
 function printModuleHeaderData($firstLine){
-	$elements = explodeFirstLine($firstLine);
-	return isValidCode($elements[0]);
+	$elements = explode(',', $firstLine); #explode first line of the .txt file
+	return array(isValidCode($elements[0]), #data to be returned
+	isValidTitle($elements[1]));
 }
 
-function explodeFirstLine($line){
-	#Explodes first line of txt file, and saves each data as element of new array "header" with meaningfull keys; 
-	#Parammeters: element of an array as line of the file
-	#Rafal Fajkowski
-	$firstLineData = explode(',', $line);
-	
-	return $firstLineData;
-}
 
 function isValidCode($element0) {
 	#Validates module code. If module code is wrong, prints out accurate error message. 
@@ -100,7 +93,7 @@ function isValidCode($element0) {
 
 	#Academic year validation:
 	#check if all characters are integers
-	$academicYear = substr($element0, 2, 4);
+	$academicYear = substr($element0, 2, 4); #extract year from the code
 	if (!ctype_digit($academicYear)) { 
 		$errorMessage = ' - Error, wrong characters format (Check if all characters are numbers)';
 	}
@@ -111,10 +104,50 @@ function isValidCode($element0) {
 		$errorMessage = ' - Error, wrong academic year (code format XXYY - where YY is greater than XX and difference is 1) ';
 	}
 
+	#Term valdiation:
+	#Check if term is in valid format - available terms are T1, T2 and T3.
+	$term = substr($element0, 6, 7); #Substract last 2 characters of module cofe
+	$availableTerm = array('1', '2', '3'); #Available term numbers
+	if (!($term[0] == 'T' and (in_array($term[1], $availableTerm)))) {
+		$errorMessage = ' - Error, wrong "term" format (Check if first character is T and second in range 1-3';
+		# code...
+	}
 
-	$output = '<p>Module code: '.$element0.$errorMessage.'</p>'; #if errorMessage is not declared, will not print out it
+	$output = '<p>Module code: '.$element0.$errorMessage.'</p>'; #if errorMessage is not declared, print out Module code
 	return $output;
 }
+
+function isValidTitle($element1) {
+	#Validates module title if it is in right format and is not empty or contain whitespaces
+	#Parammeters: second element from first line of the file.
+	#Rafal Fajkowski
+
+	#Check if is empty
+	$isEmpty = empty($element1);
+	if($isEmpty){
+		$errorMessage = ' - Error, title is empty';
+	}
+	#Check if contains whitespace
+	if(ctype_space($element1)){
+		$errorMessage = ' - Error, title data contains only whitespaces';
+	}
+
+	#Check if contains non-printable characters:
+	if(!ctype_print($element1)){
+		$errorMessage = ' - Error, title contains non-printable characters';
+	}
+
+	$output = '<p>Module title: '.$element1.$errorMessage.'</p>';
+	return $output;
+}
+
+
+
+
+
+
+
+
 
 
 ?>
