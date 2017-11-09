@@ -24,11 +24,20 @@
 						echo $data[0];
 
 						echo isValidCode($data[0]);!!!!!!!!!!!!!!!!!*/
-						echo '<h2> Module header data:</h2>
+						/*echo '<h2> Module header data:</h2>
 							<div style="margin-left: 25px;">
 								<p>File name: '. $file.'</p>'.
 								printModuleHeaderData($lines[0]).
-							'</div>';
+							'</div>';*/
+						echo '<h2> Module header data:</h2>
+							<div style="margin-left: 25px;">
+								<p>File name: '. $file.'</p>';
+								$header = printModuleHeaderData($lines[0]); #function returns multiple value in array
+								foreach ($header as $data) { #printing out data from the function
+									echo $data;
+								
+								}
+						echo '</div>';
 					}
 				}
 				
