@@ -71,6 +71,50 @@ function mmmr($array, $output = 'mean'){
         return $total; 
     } 
 } 
+function printModuleHeaderData($firstLine){
+	$elements = explodeFirstLine($firstLine);
+	return isValidCode($elements[0]);
+}
+
+function explodeFirstLine($line){
+	#Explodes first line of txt file, and saves each data as element of new array "header" with meaningfull keys; 
+	#Parammeters: element of an array as line of the file
+	#Rafal Fajkowski
+	$firstLineData = explode(',', $line);
+	
+	return $firstLineData;
+}
+
+function isValidCode($element0) {
+	#Validates module code. If module code is wrong, prints out accurate error message. 
+	#Parammeter: First element from exploded string.
+	#Rafal Fajkowski
+
+	#2 char. code validation:
+	$moduleCode = substr($element0, 0, 2); #Extract 2 characters of the code
+	$availableCode = array( 'PP', 'P1', 'DT'); #array for existing module code, adding new code available.
+	
+	if (!in_array($moduleCode, $availableCode)) { #check if code is not in array
+		$errorMessage = ' - Error, wrong module code format';
+	}
+
+	#Academic year validation:
+	#check if all characters are integers
+	$academicYear = substr($element0, 2, 4);
+	if (!ctype_digit($academicYear)) { 
+		$errorMessage = ' - Error, wrong characters format (Check if all characters are numbers)';
+	}
+	#check if difference between years is 1, 15/16 - true, 16/15, 1517 - false
+	#chenge string to integers and check the difference
+	$difference = (intval($academicYear[2].$academicYear[3])) - (intval($academicYear[0].$academicYear[1]));
+	if (!$difference = 1) {
+		$errorMessage = ' - Error, wrong academic year (code format XXYY - where YY is greater than XX and difference is 1) ';
+	}
+
+
+	$output = '<p>Module code: '.$element0.$errorMessage.'</p>'; #if errorMessage is not declared, will not print out it
+	return $output;
+}
 
 
 ?>
