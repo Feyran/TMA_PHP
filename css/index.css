@@ -1,0 +1,23 @@
+/*Basic styling for index.php, to distinct data from headings and make it readable*/
+
+body {
+	padding: 20px;
+	background-color: #f2f2f2;
+}
+
+p {
+	font-family: "Courier New", Courier, monospace;
+	font-weight: bold;
+}
+
+.data{
+	margin-left: 25px;
+}
+
+#file, #emptyFile{
+	border-bottom: solid 2px black;
+	padding-bottom: 10px;
+}
+
+
+
