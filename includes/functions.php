@@ -70,13 +70,30 @@ function mmmr($array, $output = 'mean'){
         } 
         return $total; 
     } 
-} 
-function printModuleHeaderData($firstLine){
-	$elements = explode(',', $firstLine); #explode first line of the .txt file
-	return array(isValidCode($elements[0]), #data to be returned
-	isValidTitle($elements[1]));
 }
 
+
+############################
+# PRINT MODULE HEADER DATA #
+############################
+
+function printModuleHeaderData($firstLine){
+	#Function validates data of first line using other functions and returns an array with module header data, and if needed error message
+	#Parammeter: first line of the .txt file
+	#Rafal Fajkowski
+	$elements = explode(',', $firstLine);; #explode first line of the .txt file
+	return array( #data to be returned
+	isValidCode($elements[0]), 		#Prints out module code, and error message if needed
+	isValidTitleAndTutor($elements[1], 'Title'),		#Prints out module title, and error message if needed
+	isValidTitleAndTutor($elements[2], 'Tutor name'),		#Prints out module tutor, and error message if needed
+	isValidDate($elements[3]));		#Prints out date marked, and error message if needed
+}
+
+
+
+##########################################################################################
+## FUNCTIONS VALIDATING MODULE HEADER DATA ###############################################
+##########################################################################################
 
 function isValidCode($element0) {
 	#Validates module code. If module code is wrong, prints out accurate error message. 
@@ -99,9 +116,13 @@ function isValidCode($element0) {
 	}
 	#check if difference between years is 1, 15/16 - true, 16/15, 1517 - false
 	#chenge string to integers and check the difference
-	$difference = (intval($academicYear[2].$academicYear[3])) - (intval($academicYear[0].$academicYear[1]));
-	if (!$difference = 1) {
-		$errorMessage = ' - Error, wrong academic year (code format XXYY - where YY is greater than XX and difference is 1) ';
+	$pair1 = substr($academicYear, 0, 2);
+	$pair2 = substr($academicYear, 2, 2);
+	$pair1 = intval($pair1);
+	$pair2 = intval($pair2);
+	$difference = $pair2 - $pair1;
+	if (!($difference == 1)) {
+		$errorMessage = ' - Error, "academic year" must be 1 year long (code format XXYY - where YY is greater than XX) ';
 	}
 
 	#Term valdiation:
@@ -109,7 +130,7 @@ function isValidCode($element0) {
 	$term = substr($element0, 6, 7); #Substract last 2 characters of module cofe
 	$availableTerm = array('1', '2', '3'); #Available term numbers
 	if (!($term[0] == 'T' and (in_array($term[1], $availableTerm)))) {
-		$errorMessage = ' - Error, wrong "term" format (Check if first character is T and second in range 1-3';
+		$errorMessage = ' - Error, wrong "term" format (Check if first character is T and second in range 1-3)';
 		# code...
 	}
 
@@ -117,31 +138,165 @@ function isValidCode($element0) {
 	return $output;
 }
 
-function isValidTitle($element1) {
-	#Validates module title if it is in right format and is not empty or contain whitespaces
-	#Parammeters: second element from first line of the file.
+function isValidTitleAndTutor($element1, $string) {
+	#Validates module title and tutor name. Check if it is in right format and is not empty or contains whitespaces
+	#Parammeters: second(for title) or third(for tutor) element from first line of the file, $string as "Tutor name" or "Title"
 	#Rafal Fajkowski
 
 	#Check if is empty
 	$isEmpty = empty($element1);
 	if($isEmpty){
-		$errorMessage = ' - Error, title is empty';
+		$errorMessage = ' - Error, '.$string.' is empty';
 	}
 	#Check if contains whitespace
 	if(ctype_space($element1)){
-		$errorMessage = ' - Error, title data contains only whitespaces';
+		$errorMessage = ' - Error, '.$string.' contains only whitespaces';
 	}
 
 	#Check if contains non-printable characters:
 	if(!ctype_print($element1)){
-		$errorMessage = ' - Error, title contains non-printable characters';
+		$errorMessage = ' - Error, '.$string.' contains non-printable characters';
 	}
 
-	$output = '<p>Module title: '.$element1.$errorMessage.'</p>';
+	$output = '<p>'.$string.': '.$element1.$errorMessage.'</p>';
 	return $output;
 }
 
 
+function isValidDate($element3) {
+	#Checks if date is in the right format: DD/MM/YEAR. Used checkdate() function is used.
+	#The data from .txt file need to be changed to integer, exploded and passed in the right order to the 
+	#Parammeter: fourth element of first line of .txt file.
+	#Rafal Fajkowski
+	
+	$separator = array('/' , '.' , '-'); #Available separators in case different were used.
+	$validDate = str_replace($separator, '/' ,$element3); #Change separator to universal format
+	$explodedDate = explode('/', $validDate);
+	$day = intval($explodedDate[0]);
+	$month = intval($explodedDate[1]);
+	$year = intval($explodedDate[2]);
+	#$validDate = array_map('intval', $validDate )); #Change string to integers !!!!!!!
+	$validDate = checkdate($day, $month, $year);
+	if($validDate){
+		$errorMessage = ' - Error, invalid "date", date format DD/MM/YEAR';
+	}
+
+	#Check if year is in range
+	if($year < 2000) {
+		$errorMessage = ' - Error, date is not in available range';
+	}
+
+	$output = '<p>Date marked: '.$element3.$errorMessage.'</p>';
+	return $output;
+}
+
+##########################################################################################
+##  FUNCTION VALIDATING STUDENTS IDS AND MARKS ##########################################
+##########################################################################################
+
+
+function is_valid_id_mark($lineNumber){
+	#Function returns student id and their mark. If data is invalid, prints out meaningfull error message
+	#Parammeter: line number of opened .txt file
+	#Rafal Fajkowski
+	$flag = false; #IF error appears, flag the data so it will not be added to the valid student array.
+	$studentData = explode(',', $lineNumber);
+	global $validStudents; #Set as global to update array outside of function scope
+	global $marksToAnalyse; #Sets array as global so will be able to update data inside the function
+	global $errorCount; # Error count to return to grade distribution function
+	#########################
+	# STUDENT ID VALIDATION #
+	#########################
+	$studentData[0] = trim($studentData[0]);
+	
+	#Check for amount of numeric characters in student ID data:
+	if (!(strlen($studentData[0]) == 8)) {
+		$errorMessage = ' - Error, invalid student ID length';
+		$flag = true;
+	}
+
+	#Check if all characters are integers:
+	if (!ctype_digit($studentData[0])) {
+		$errorMessage = ' - Error, invalid alphabetical character in student ID ';
+		$flag = true;
+	}
+	#Check if student id is missing or contains whitespaces:
+	if (ctype_space($studentData[0]) || empty($studentData[0])) {
+		$errorMessage = ' - Error, "Student ID" is missing';
+		$flag = true;
+	}
+
+	###########################
+	# STUDENT MARK VALIDATION #
+	###########################
+	$studentData[1] = trim($studentData[1]); # clean data from any whitespaces
+	
+	#Check if grade is in range:
+	if(($studentData[1] > 100) || ($studentData[1] < 0)) {
+		$errorMessage = ' - Error, "Studen mark" is not in range 1-100';
+		$flag = true;
+	}
+
+	#Check if student mark is empty or contains whitespaces:
+	if (ctype_space($studentData[1]) || empty($studentData[1])) {
+		$errorMessage = ' - Error, "Student mark" is missing';
+		$flag = true;
+	}
+
+	#Check if all characters are digits
+	if (!ctype_digit($studentData[1])) {
+		$errorMessage = ' - Error, invalid student mark format (need to contain only digits)';
+		$flag = true;
+	}
+
+	#Update validStudents and marksToAnalyse array, if error appear add 1 to $errorCount:
+	if(!$flag){
+		$validStudents[] = $studentData[0].' : '.$studentData[1];
+		$marksToAnalyse[] = $studentData[1];
+	}
+	else{
+		$errorCount ++;
+
+	}
+
+
+	$output = $studentData[0].' : '.$studentData[1].$errorMessage;
+	return '<p>'.$output.'</p>';
+}
+
+
+function gradeDistribution($array, $errorCount){
+	#Function analyse students grades and put them in right group.
+	#Parammeter: array of vaild grades:
+	#Rafal Fajkowski
+	$distinction = 0;
+	$merit = 0;
+	$pass = 0;
+	$fail = 0;
+	foreach ($array as $key) {
+		if ($key > 69) {
+			$distinction ++;
+
+		}
+		elseif ($key > 59) {
+			$merit ++;
+
+		}
+		elseif ($key > 39) {
+			$pass ++;
+			# code...
+
+		}
+		else{
+			$fail ++;
+		}
+	}
+	return 	'<p>Distinction: '.$distinction.'</p>
+			<p>Merit '.$merit.'</p>
+			<p>Pass: '.$pass.'</p>
+			<p>Fail: '.$fail.'</p>
+			<p>Errors: '.$errorCount.'</p>';
+}
 
 
 
