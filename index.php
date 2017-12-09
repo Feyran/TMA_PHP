@@ -9,19 +9,19 @@
 				
 				while (($file = readdir($directory))) {
 					
-
+					#Exlude '.' and '..' name of directory
 					if (!($file == '.' ||  $file == '..')){
-						
+						#Check the extension of the file, exlude one with different then .txt
 						$fileExtension = pathinfo($file);
-						$fileExtension = $fileExtension['extension'];
+						$fileExtension = $fileExtension['extension']; #Extract extension of the file
 
 						if (!($fileExtension == 'txt')) {
 							continue;
 						}
-
+						##
 						$lines = file('data/'.$file);
-							
-							#CHeck if file is empty or it contains only whitespaces:
+						
+							#Check if file is empty or it contains only whitespaces:
 							if((empty($lines) || ctype_space($lines[0]))){
 								echo '<p id="emptyFile"> Error - file: '.$file.' is empty or contains whitespaces only</p>';
 							continue;
@@ -83,7 +83,7 @@
 					}
 				}
 				
-				closedir($handle);
+				closedir($directory);
 		?>
 	
 
